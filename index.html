@@ -271,6 +271,7 @@ h3{margin:6px 0 0;font-size:1rem}
   <header class="top noprint">
     <div class="top-in gut">
       <h2>Gestione</h2>
+      <button class="btn sm" id="adminLockBtn" type="button" hidden>Blocca</button>
       <button class="iconbtn" id="adminClose" type="button" aria-label="Torna alla cassa"><svg><use href="#i-x"/></svg></button>
     </div>
   </header>
@@ -281,6 +282,7 @@ h3{margin:6px 0 0;font-size:1rem}
       <label for="adminPw">Password</label>
       <input class="input" id="adminPw" type="password" autocomplete="current-password">
     </div>
+    <label class="row" style="font-weight:600"><input type="checkbox" id="adminTrustLock"> Non chiedere più la password su questo dispositivo</label>
     <div class="row"><button class="btn primary" type="submit">Entra in Gestione</button></div>
     <div class="msg err" id="adminMsg" role="alert"></div>
   </form>
@@ -345,6 +347,8 @@ h3{margin:6px 0 0;font-size:1rem}
           <input class="input" id="discount" inputmode="decimal" style="max-width:140px">
         </div>
         <label class="row" style="font-weight:600"><input type="checkbox" id="soundToggle"> Suono a ogni scansione</label>
+        <label class="row" style="font-weight:600"><input type="checkbox" id="trustToggle"> Non chiedere la password per la Gestione su questo dispositivo</label>
+        <p class="note">Attivalo solo sul dispositivo del responsabile. Altrimenti la Gestione resta aperta 30 minuti dall'ultimo utilizzo.</p>
         <div class="row"><button class="btn primary" id="setSave" type="button">Salva</button></div>
         <div class="msg" id="setMsg"></div>
 
@@ -724,23 +728,35 @@ $("camBtn").addEventListener("click",function(){cam.on?stopCam():startCam();});
 document.addEventListener("visibilitychange",function(){if(document.hidden&&cam.on)stopCam();});
 
 /* ================= Gestione ================= */
+var SESSION_MS=30*60*1000;
+if(typeof state.adminTrusted!=="boolean")state.adminTrusted=false;
+function adminUnlocked(){return state.adminTrusted||(state.adminUntil&&Date.now()<state.adminUntil);}
+function touchSession(){if(!state.adminTrusted){state.adminUntil=Date.now()+SESSION_MS;save();}}
+function unlockAdmin(){$("adminLock").hidden=true;$("adminBody").hidden=false;$("adminLockBtn").hidden=!!state.adminTrusted;touchSession();showTab(adminTab);}
 $("gearBtn").addEventListener("click",function(){
   if(cam.on)stopCam();
-  adminOpen=true;$("admin").hidden=false;$("adminLock").hidden=false;$("adminBody").hidden=true;$("adminMsg").textContent="";$("adminPw").value="";
+  adminOpen=true;$("admin").hidden=false;
+  if(adminUnlocked()){unlockAdmin();return;}
+  $("adminLock").hidden=false;$("adminBody").hidden=true;$("adminLockBtn").hidden=true;$("adminMsg").textContent="";$("adminPw").value="";$("adminTrustLock").checked=false;
   if(!touch)setTimeout(function(){try{$("adminPw").focus();}catch(e){}},50);
 });
+$("adminLockBtn").addEventListener("click",function(){state.adminUntil=0;save();adminOpen=false;$("admin").hidden=true;render();toast("Gestione bloccata");});
+$("admin").addEventListener("click",function(){if(adminOpen&&!$("adminBody").hidden)touchSession();});
+$("admin").addEventListener("input",function(){if(adminOpen&&!$("adminBody").hidden)touchSession();});
 $("adminClose").addEventListener("click",function(){adminOpen=false;$("admin").hidden=true;render();});
 $("adminLock").addEventListener("submit",function(e){
   e.preventDefault();
   if($("adminPw").value!==state.cfg.key){$("adminMsg").textContent="Password sbagliata.";return;}
-  $("adminPw").value="";$("adminLock").hidden=true;$("adminBody").hidden=false;showTab(adminTab);
+  $("adminPw").value="";
+  if($("adminTrustLock").checked){state.adminTrusted=true;save();}
+  unlockAdmin();
 });
 document.querySelectorAll(".tabs button").forEach(function(b){b.addEventListener("click",function(){showTab(b.dataset.tab);});});
 function showTab(t){
   adminTab=t;
   document.querySelectorAll(".tabs button").forEach(function(b){b.setAttribute("aria-selected",b.dataset.tab===t?"true":"false");});
   ["riepilogo","prodotti","etichette","impostazioni"].forEach(function(x){$("p-"+x).hidden=x!==t;});
-  if(t==="impostazioni"){$("devName").value=state.cfg.dev;$("discount").value=String(state.discount).replace(".",",");$("soundToggle").checked=state.sound;$("advUrl").value=state.cfg.url;}
+  if(t==="impostazioni"){$("devName").value=state.cfg.dev;$("discount").value=String(state.discount).replace(".",",");$("soundToggle").checked=state.sound;$("trustToggle").checked=state.adminTrusted;$("advUrl").value=state.cfg.url;}
   renderAdmin();
 }
 function renderAdmin(){
@@ -827,7 +843,10 @@ function smsg(id,t,ok){var m=$(id);m.textContent=t;m.className="msg "+(ok?"ok":"
 $("setSave").addEventListener("click",function(){
   var n=$("devName").value.trim();if(n)state.cfg.dev=n.slice(0,40);
   var d=parseFloat($("discount").value.replace(",","."));if(isFinite(d)&&d>=0&&d<=100)state.discount=d;
-  state.sound=$("soundToggle").checked;save();render();smsg("setMsg","Salvato",true);
+  state.sound=$("soundToggle").checked;
+  state.adminTrusted=$("trustToggle").checked;if(!state.adminTrusted)state.adminUntil=Date.now()+SESSION_MS;
+  $("adminLockBtn").hidden=state.adminTrusted;
+  save();render();smsg("setMsg","Salvato",true);
 });
 $("syncNow").addEventListener("click",function(){lastErr="";sync().then(function(){smsg("linkMsg",lastErr?"Invio non riuscito: "+lastErr:"Tutto inviato.",!lastErr);renderAdmin();});});
 $("pullNow").addEventListener("click",function(){pullProducts().then(function(ch){smsg("linkMsg",ch?"Prodotti aggiornati dallo Sheet.":"I prodotti sono già aggiornati.",true);});});
@@ -845,7 +864,7 @@ $("restoreYes").addEventListener("click",function(){
 });
 $("logoutBtn").addEventListener("click",function(){
   if(queueSize()>0){smsg("linkMsg","Ci sono "+queueSize()+" vendite non inviate: aspetta che partano prima di disattivare.");sync();return;}
-  state.cfg.key="";save();adminOpen=false;$("admin").hidden=true;showScreen();
+  state.cfg.key="";state.adminTrusted=false;state.adminUntil=0;save();adminOpen=false;$("admin").hidden=true;showScreen();
 });
 $("advSave").addEventListener("click",function(){
   var u=$("advUrl").value.trim();

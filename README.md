@@ -25,7 +25,7 @@ Sul telefono puoi aggiungere l'app alla schermata Home: su iPhone con Condividi 
 
 ## Per il responsabile: area Gestione
 
-Il pulsante **Gestione** in alto a destra è protetto dalla stessa password. Contiene:
+Il pulsante **Gestione** in alto a destra è protetto dalla stessa password. Dopo l'accesso resta aperto per 30 minuti dall'ultimo utilizzo (pulsante **Blocca** per chiuderlo prima). Sul dispositivo del responsabile si può attivare "Non chiedere più la password su questo dispositivo". Contiene:
 
 - **Riepilogo**: totali della postazione, correzioni, export CSV, azzeramento.
 - **Prodotti**: nomi, prezzi e codici. Le modifiche arrivano a tutte le postazioni entro un minuto.
