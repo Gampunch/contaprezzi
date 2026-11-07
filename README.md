@@ -1,82 +1,63 @@
 # Contapezzi Evento
 
-Web app gratuita per contare i prodotti dati via durante un evento con un lettore di codici a barre USB.
+Web app gratuita per contare i prodotti dati via durante un evento. Funziona su telefono, tablet e PC, con lettore di codici a barre USB, con la fotocamera o toccando i prodotti.
 
-- Ogni scansione chiede la tipologia: **Pagato**, **Scontato** o **Omaggio**.
-- Conta i pezzi e l'incasso per prodotto.
-- Stampa le etichette con i codici a barre (Code 128).
-- Funziona **anche offline**, dopo la prima apertura online.
-- Fa il **backup su Google Sheet**: le scansioni fatte offline restano in coda e vengono inviate appena torna internet.
+- Ogni vendita chiede la tipologia: **Pagato**, **Scontato** o **Omaggio**.
+- Funziona **anche offline**: le vendite restano sul dispositivo e partono appena torna internet.
+- Il **Google Sheet** è il database: riceve tutte le vendite e contiene l'elenco prodotti condiviso tra le postazioni.
+- Ogni dispositivo si attiva con **una sola password**.
 
-Costi: zero. Servono GitHub Pages (hosting gratuito) e un Google Sheet con Apps Script (gratuito).
+## Per chi sta alla cassa
 
----
+1. Apri il link dell'app. Al primo avvio inserisci la password dell'evento, che te la dà il responsabile.
+2. Per vendere hai tre modi:
+   - **tocchi il prodotto** sullo schermo;
+   - **scansioni l'etichetta** con il lettore USB;
+   - premi **Fotocamera** e inquadri l'etichetta.
+3. Scegli **Pagato**, **Scontato** o **Omaggio**. Fatto.
+4. Se hai sbagliato, premi **Annulla ultimo** due volte.
+5. In alto vedi lo stato del salvataggio:
+   - *Tutto salvato*: tutte le vendite sono nel Google Sheet.
+   - *N da inviare*: le vendite partiranno da sole.
+   - *Offline*: vendi tranquillo, le vendite restano sul dispositivo.
 
-## 1. Pubblicare l'app su GitHub Pages
+Sul telefono puoi aggiungere l'app alla schermata Home: su iPhone con Condividi → Aggiungi alla schermata Home, su Android con il menu ⋮ → Installa app.
 
-1. Crea una repo **pubblica** su GitHub e carica tutti i file di questa cartella.
-2. Vai in **Settings → Pages** e in *Build and deployment* scegli **Deploy from a branch**, poi `main` e `/ (root)`, e premi **Save**.
-3. Dopo 1–2 minuti l'app è online su `https://TUONOME.github.io/NOME-REPO/`.
+## Per il responsabile: area Gestione
 
-La repo non contiene dati né password. Le scansioni restano nel browser di ogni PC e nel tuo Google Sheet.
+Il pulsante **Gestione** in alto a destra è protetto dalla stessa password. Contiene:
 
-## 2. Collegare il Google Sheet (database di backup)
+- **Riepilogo**: totali della postazione, correzioni, export CSV, azzeramento.
+- **Prodotti**: nomi, prezzi e codici. Le modifiche arrivano a tutte le postazioni entro un minuto.
+- **Etichette**: stampa dei codici a barre.
+- **Impostazioni**: nome della postazione, percentuale di sconto, suono, stato del collegamento, ripristino, disattivazione del dispositivo.
 
-1. Con un account Google **personale** crea un nuovo Google Sheet, ad esempio "Contapezzi – Database". Un account aziendale potrebbe bloccare l'accesso "Chiunque".
-2. Nel foglio apri **Estensioni → Apps Script**.
-3. Cancella il contenuto, incolla tutto il file [`google-apps-script/Code.gs`](google-apps-script/Code.gs) e salva.
-4. Nella riga `const CHIAVE = 'CAMBIA-QUESTA-CHIAVE';` sostituisci la chiave con una parola segreta lunga, ad esempio `evento-ottobre-7f3k9q`.
-5. In alto scegli la funzione **setup** e premi **▶ Esegui**. Concedi le autorizzazioni: se compare "Google non ha verificato l'app", vai su *Avanzate → Vai a … (non sicuro)*, perché lo script è il tuo.
-6. Vai su **Distribuisci → Nuova distribuzione**, scegli il tipo **App web** e imposta:
-   - Esegui come: **Me**
-   - Chi ha accesso: **Chiunque**
-7. Copia l'**URL dell'app web**, quello che finisce con `/exec`.
-8. Nell'app apri la scheda **Google Sheet** e incolla URL e chiave. Dai un nome alla cassa (es. "Cassa 1") e premi **Salva e prova la connessione**.
+Il totale di **tutte le postazioni** è nel Google Sheet, foglio **Riepilogo**.
 
-Nel foglio trovi:
+## Configurazione (una volta sola)
 
-| Foglio | Contenuto |
-|---|---|
-| Scansioni | una riga per pezzo: ID, data e ora, cassa, codice, prodotto, tipologia, prezzo applicato, origine, stato (`OK` o `ANNULLATA`) |
-| Prodotti | l'elenco prodotti aggiornato dall'app |
-| Riepilogo | pezzi per tipologia, totali per prodotto e totali per cassa, che si aggiornano da soli |
+### Google Sheet
+1. In un Google Sheet apri **Estensioni → Apps Script** e incolla [`google-apps-script/Code.gs`](google-apps-script/Code.gs).
+2. Nella riga `const CHIAVE = '...'` scrivi la **password dell'evento**.
+3. Esegui la funzione **setup** e concedi le autorizzazioni.
+4. Vai su **Distribuisci → Nuova distribuzione → App web**, con *Esegui come: Me* e *Chi ha accesso: Chiunque*. Copia l'URL che finisce con `/exec`.
 
-Se modifichi lo script, devi pubblicare una nuova versione: **Distribuisci → Gestisci distribuzioni → ✏️ → Versione: Nuova versione**. L'URL resta lo stesso.
+### App
+In `index.html` la riga `var DEFAULT_URL="…/exec";` contiene l'indirizzo dello script. Per un nuovo evento con un nuovo Sheet basta cambiare quella riga.
 
-## 3. Usarlo all'evento
+### Cambiare la password
+Modifica `CHIAVE` nello script, poi vai su **Distribuisci → Gestisci distribuzioni → ✏️ → Nuova versione**. I dispositivi già attivi andranno riattivati con la nuova password: Gestione → Impostazioni → Disattiva, poi rientra.
 
-1. Prima dell'evento, **con internet**, apri l'app sul PC della cassa. Da questo momento è salvata per l'uso offline. In Chrome puoi anche installarla come app con l'icona ⊕ nella barra degli indirizzi.
-2. Nella scheda **Prodotti** inserisci nomi e prezzi; con prezzo 0 l'incasso non viene calcolato.
-3. Nella scheda **Etichette** stampa i codici. I tre codici "Tipo" servono a scegliere Pagato, Scontato o Omaggio direttamente con lo scanner.
-4. Durante l'evento: scansiona il prodotto, scegli la tipologia e il pezzo viene salvato.
-5. In alto a destra vedi lo stato del backup:
-   - *Sheet: sincronizzato*: tutto è già sul Google Sheet.
-   - *Offline · N in coda*: le scansioni sono salvate sul PC e partiranno al ritorno della rete.
-   - *Sheet: errore*: controlla URL e chiave nella scheda Google Sheet.
+## Pubblicazione
 
-**Più casse**: usa lo stesso URL e la stessa chiave su ogni PC, ma con un nome cassa diverso. Il foglio Riepilogo somma tutte le casse.
+L'app è ospitata su GitHub Pages (repo pubblica, Settings → Pages → branch `main`, cartella root). La repo non contiene né vendite né password: l'indirizzo dello script senza la password non permette di scrivere nello Sheet.
 
-**Cambio PC o browser svuotato**: inserisci URL, chiave e lo stesso nome cassa, poi premi **Ripristina da Google Sheet**.
+**Per aggiornare**: carica il nuovo `index.html` e in `sw.js` aumenta `VERSIONE` (es. `contapezzi-v5`). Sui dispositivi basta ricaricare l'app due volte.
 
-**Fine evento**: in *Storico ed export* scarica il CSV. "Azzera conteggio" svuota solo il PC (il Google Sheet resta) ed è bloccato finché ci sono scansioni non ancora inviate.
+## Lettore barcode USB
 
-## Test con il telefono (senza lettore)
-
-1. Apri il link di GitHub Pages dal telefono: serve `https`, altrimenti il browser blocca la fotocamera.
-2. Nella scheda **Conteggio** premi **Usa la fotocamera** e consenti l'accesso.
-3. Inquadra un'etichetta stampata, o il codice mostrato sullo schermo del PC nella scheda *Etichette*, tenendo il codice orizzontale sulla linea rossa.
-4. Scegli la tipologia toccando il pulsante, oppure inquadrando uno dei codici "Tipo".
-
-Funziona su Chrome per Android e su Safari per iPhone. Ogni telefono è una cassa a sé: dagli un nome diverso nella scheda Google Sheet, ad esempio "Test telefono".
-
-## Lettore barcode
-
-Va bene qualsiasi lettore USB che si comporta come una tastiera e invia **Invio** dopo ogni lettura, che è l'impostazione predefinita quasi ovunque. I codici usano solo lettere maiuscole e numeri, così vengono letti correttamente anche con la tastiera italiana.
-
-## Aggiornare l'app
-
-Carica il nuovo `index.html` nella repo e in `sw.js` aumenta il numero di `VERSIONE` (es. `contapezzi-v3`). I dati già salvati non si perdono.
+Va bene qualsiasi lettore che si comporta come una tastiera e invia **Invio** dopo ogni lettura (impostazione di fabbrica quasi ovunque). Sullo schermo non serve cliccare nulla: basta scansionare. Con i codici "Tipo" stampati dalla Gestione si sceglie la tipologia senza toccare lo schermo.
 
 ## Licenze
 
-La lettura dei codici con la fotocamera usa [ZXing for JS](https://github.com/zxing-js/library) (Apache 2.0) oppure, dove disponibile, il lettore integrato del browser, caricata da jsDelivr e salvata per l'uso offline.
+La lettura dalla fotocamera usa il lettore integrato del browser dove disponibile, altrimenti [ZXing for JS](https://github.com/zxing-js/library) (Apache 2.0), caricato da jsDelivr e salvato per l'uso offline.

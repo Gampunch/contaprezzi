@@ -1,6 +1,6 @@
 // Contapezzi Evento – funzionamento offline.
 // Quando pubblichi una nuova versione, aumenta il numero qui sotto.
-const VERSIONE = 'contapezzi-v3';
+const VERSIONE = 'contapezzi-v4';
 const FILE = ['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png', './icon-512.png'];
 const ZXING = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
 
