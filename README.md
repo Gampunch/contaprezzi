@@ -79,4 +79,4 @@ Carica il nuovo `index.html` nella repo e in `sw.js` aumenta il numero di `VERSI
 
 ## Licenze
 
-La lettura dei codici con la fotocamera usa [ZXing for JS](https://github.com/zxing-js/library) (Apache 2.0), caricata da jsDelivr e salvata per l'uso offline.
+La lettura dei codici con la fotocamera usa [ZXing for JS](https://github.com/zxing-js/library) (Apache 2.0) oppure, dove disponibile, il lettore integrato del browser, caricata da jsDelivr e salvata per l'uso offline.
